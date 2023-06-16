@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <iostream>
 #include <fmt/format.h>
 #include <vector>
@@ -45,7 +46,7 @@ public:
             size *= dim;
         }
         auto data = std::vector<T>(size);
-        for (int i = 0; i < data.size(); i++) {
+        for (size_t i = 0; i < data.size(); i++) {
             data[i] = static_cast<T>(standard_normal_distribution(generator));
         }
         return Tensor(data, dimensions);
@@ -59,11 +60,11 @@ public:
 
     Tensor& operator+=(const Tensor& rhs) {
         if (m_data.size() < rhs.m_data.size()) {
-            for (int i = 0; i < m_data.size(); i++) {
+            for (size_t i = 0; i < m_data.size(); i++) {
                 m_data[i] += rhs.m_data[i];
             }
         } else {
-            for (int i = 0; i < rhs.m_data.size(); i++) {
+            for (size_t i = 0; i < rhs.m_data.size(); i++) {
                 m_data[i] += rhs.m_data[i];
             }
         }
@@ -90,11 +91,11 @@ public:
 
     Tensor& operator-=(const Tensor& rhs) {
          if (m_data.size() < rhs.m_data.size()) {
-            for (int i = 0; i < m_data.size(); i++) {
+            for (size_t i = 0; i < m_data.size(); i++) {
                 m_data[i] -= rhs.m_data[i];
             }
         } else {
-            for (int i = 0; i < rhs.m_data.size(); i++) {
+            for (size_t i = 0; i < rhs.m_data.size(); i++) {
                 m_data[i] -= rhs.m_data[i];
             }
         }
@@ -113,11 +114,11 @@ public:
 
     Tensor& operator/=(const Tensor& rhs) {
         if (m_data.size() < rhs.m_data.size()) {
-            for (int i = 0; i < m_data.size(); i++) {
+            for (size_t i = 0; i < m_data.size(); i++) {
                 m_data[i] /= rhs.m_data[i];
             }
         } else {
-            for (int i = 0; i < rhs.m_data.size(); i++) {
+            for (size_t i = 0; i < rhs.m_data.size(); i++) {
                 m_data[i] /= rhs.m_data[i];
             }
         }
@@ -150,12 +151,12 @@ public:
 
     Tensor& element_wise_multiply(const Tensor& rhs) {
         if (m_data.size() < rhs.m_data.size()) {
-            for (int i = 0; i < m_data.size(); i++) {
+            for (size_t i = 0; i < m_data.size(); i++) {
                 m_data[i] *= rhs.m_data[i];
             }
         } else {
 
-            for (int i = 0; i < rhs.m_data.size(); i++) {
+            for (size_t i = 0; i < rhs.m_data.size(); i++) {
                 m_data[i] *= rhs.m_data[i];
             }
         }
@@ -165,7 +166,7 @@ public:
     std::string as_string() const {
 
         std::string output = fmt::format("Shape = ");
-        for (int j = 0; j < m_dimensions.size(); j++) {
+        for (size_t j = 0; j < m_dimensions.size(); j++) {
             output+= fmt::format("{}, ", m_dimensions[j]);
         }
         output += "\n";
@@ -176,17 +177,17 @@ public:
         }
 
 
-        for (int i = 0; i < m_data.size(); i++) {
+        for (size_t i = 0; i < m_data.size(); i++) {
             std::vector<int> dim_modulos(m_dimensions.size()); 
             
-            for (int j = 0; j < m_dimensions.size(); j++) {
+            for (size_t j = 0; j < m_dimensions.size(); j++) {
                 dim_modulos[j] = (i % dims_extended[j]);
             }
             output += fmt::format("{}", m_data[i]);
 
             if (dim_modulos[dim_modulos.size() - 1] == dims_extended[dims_extended.size() -1] -1 ) {
                 output += "\n";
-                for (int j = 1; j < dim_modulos.size() -1; j++) {
+                for (size_t j = 1; j < dim_modulos.size() -1; j++) {
                     if (dim_modulos[j] == dims_extended[j] - 1) {
                         output += "\n";
                     }
@@ -204,7 +205,21 @@ public:
     }
 
     Tensor operator[](int index) {
-        
+        if (m_dimensions.size() == 1) {
+            return Tensor({m_data[index]}, {1});
+        }
+        int new_size = 1;
+        std::vector<int> new_dimension(m_dimensions.size() - 1);
+        for (size_t i = 0; i < new_dimension.size(); i++) {
+            new_dimension[i] = m_dimensions[i+1];
+            new_size *= new_dimension[i];
+        }
+        std::vector<T> new_data(new_size);
+        std::cout << new_size << ">>>>>>>>>>\n";
+        for (int i = 0; i < new_size; i++) {
+            new_data[i] = m_data[i + index * new_size];
+        }
+        return Tensor(new_data, new_dimension);
     }
 };
 }

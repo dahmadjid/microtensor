@@ -12,4 +12,6 @@ int main() {
 
     auto c = a.element_wise_multiply(b);
     std::cout << c << '\n';
+
+    std::cout << c[1][0][0];
 }       
