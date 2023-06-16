@@ -19,7 +19,7 @@ public:
     
     Tensor(std::vector<T>&& data, std::vector<int>&& dimensions) noexcept {
         m_data = std::forward<std::vector<T>>(data);
-        m_dimensions = std::forward<std::vector<T>>(dimensions);
+        m_dimensions = std::forward<std::vector<int>>(dimensions);
     }   
 
     static Tensor with_initial_value(const std::vector<int>& dimensions, const T& initial_value) {
@@ -57,7 +57,7 @@ public:
     Tensor& operator=(Tensor&& t) = default;
     
 
-    Tensor& operator+(const Tensor& rhs) {
+    Tensor& operator+=(const Tensor& rhs) {
         if (m_data.size() < rhs.m_data.size()) {
             for (int i = 0; i < m_data.size(); i++) {
                 m_data[i] += rhs.m_data[i];
@@ -68,15 +68,19 @@ public:
             }
         }
         return *this;
-    };
-    Tensor& operator+=(const Tensor& rhs) {
-        return *this + rhs;
     }
+
+    Tensor operator+(const Tensor& rhs) {
+        Tensor new_tensor = Tensor(*this);
+        new_tensor += rhs;
+        return new_tensor;
+    };
+    
     friend Tensor operator+(const Tensor& lhs, const Tensor& rhs) {
         return lhs + rhs;
     }
     
-    Tensor& operator*(const Tensor& rhs) {
+    Tensor operator*(const Tensor& rhs) {
         
     };
 
@@ -84,8 +88,8 @@ public:
         return lhs * rhs;
     }
 
-    Tensor& operator-(const Tensor& rhs) {
-        if (m_data.size() < rhs.m_data.size()) {
+    Tensor& operator-=(const Tensor& rhs) {
+         if (m_data.size() < rhs.m_data.size()) {
             for (int i = 0; i < m_data.size(); i++) {
                 m_data[i] -= rhs.m_data[i];
             }
@@ -95,15 +99,19 @@ public:
             }
         }
         return *this;
-    };
-    Tensor& operator-=(const Tensor& rhs) {
-        return *this - rhs;
     }
+
+    Tensor operator-(const Tensor& rhs) {
+        Tensor new_tensor = Tensor(*this);
+        new_tensor -= rhs;
+        return new_tensor;
+    };
+
     friend Tensor operator-(const Tensor& lhs, const Tensor& rhs) {
         return lhs - rhs;
     }
 
-    Tensor& operator/(const Tensor& rhs) {
+    Tensor& operator/=(const Tensor& rhs) {
         if (m_data.size() < rhs.m_data.size()) {
             for (int i = 0; i < m_data.size(); i++) {
                 m_data[i] /= rhs.m_data[i];
@@ -114,10 +122,13 @@ public:
             }
         }
         return *this;
-    };
-    Tensor& operator/=(const Tensor& rhs) {
-        return *this / rhs;
     }
+
+    Tensor operator/(const Tensor& rhs) {
+        Tensor new_tensor = Tensor(*this);
+        new_tensor /= rhs;
+        return new_tensor;
+    };
     friend Tensor operator/(const Tensor& lhs, const Tensor& rhs) {
         return lhs / rhs;
     }
@@ -143,15 +154,13 @@ public:
                 m_data[i] *= rhs.m_data[i];
             }
         } else {
+
             for (int i = 0; i < rhs.m_data.size(); i++) {
                 m_data[i] *= rhs.m_data[i];
             }
         }
+        return *this;
     };
-
-    friend Tensor element_wise_multiply(const Tensor& lhs, const Tensor& rhs) {
-        return lhs * rhs;
-    }
 
     std::string as_string() const {
 

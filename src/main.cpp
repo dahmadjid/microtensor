@@ -4,11 +4,12 @@
 #include "microtensor.h"
 int main() {
     auto names = io::read_text_file("data/names.txt");
-    auto a = microtensor::Tensor<float>::rand_normal_distrubution({4 ,1});
-    auto b = microtensor::Tensor<float>::rand_normal_distrubution({4 ,1});
+    auto a = microtensor::Tensor<int>::with_initial_value({2, 10}, 2);
+    auto b = microtensor::Tensor<int>::rand_normal_distrubution({2, 10});
+
     std::cout << a << '\n';
     std::cout << b << '\n';
 
-    a += b;
-    std::cout << a << '\n';
+    auto c = a.element_wise_multiply(b);
+    std::cout << c << '\n';
 }       
