@@ -1,5 +1,5 @@
-add_executable(micrograd main.cpp files.cpp)
+add_executable(microtensor main.cpp files.cpp)
 
-target_link_libraries(micrograd fmt)
+target_link_libraries(microtensor fmt)
 
-target_include_directories(micrograd PUBLIC fmt)
+target_include_directories(microtensor PUBLIC fmt)

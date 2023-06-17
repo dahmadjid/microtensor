@@ -1,5 +1,4 @@
 #pragma once
-#include <cstddef>
 #include <iostream>
 #include <fmt/format.h>
 #include <vector>
@@ -58,6 +57,27 @@ public:
     Tensor& operator=(Tensor&& t) = default;
     
 
+    std::vector<int> left_pad_dimension(size_t n) const {
+        if (m_dimensions.size() >= n) {
+            return m_dimensions;
+        }
+        std::vector<int> new_dim(n);
+        auto offset = n - m_dimensions.size();
+        for (size_t i = 0; i < n; i++) {
+            if (i < offset) {
+                new_dim[i] = 1; 
+            } else {
+                new_dim[i] = m_dimensions[i - offset];
+            }
+        } 
+        return new_dim;
+    }
+
+    inline std::vector<int> broadcast_dimension_over(const std::vector<int>& dim) const {
+        return left_pad_dimension(dim.size());
+    } 
+
+
     Tensor& operator+=(const Tensor& rhs) {
         if (m_data.size() < rhs.m_data.size()) {
             for (size_t i = 0; i < m_data.size(); i++) {
@@ -81,9 +101,57 @@ public:
         return lhs + rhs;
     }
     
-    Tensor operator*(const Tensor& rhs) {
+    // __transpose__ assumes that this object is 2d.
+    Tensor __transpose__() const {
+        Tensor new_tensor(std::vector<T>(m_dimensions[0] * m_dimensions[1]), {m_dimensions[1], m_dimensions[0]});
+        for (int i = 0; i < m_dimensions[0]; i++) {
+            for (int j = 0; j < m_dimensions[1]; j++) {
+                // fmt::println("m_dim[0]={} m_dim[1]={} i={} j={}", m_dimensions[0], m_dimensions[1], i, j );
+                new_tensor.m_data[j * m_dimensions[0] + i] = m_data[i * m_dimensions[0] + j];
+            }
+        }
         
-    };
+        return new_tensor;
+    }
+    // a very naive __matrix_multiply__ assumes that rhs and this object are 2d matrices that dont have dimension mismatch.
+    // 
+    // 4 1 1 6
+    Tensor __matrix_multiply__(const Tensor& rhs) {
+        Tensor result = Tensor::zeros({m_dimensions[0], rhs.m_dimensions[1]});
+        for (int i = 0; i < result.m_dimensions[0]; i++) {
+            for (int j = 0; j < result.m_dimensions[1]; j++) {
+                for (int k = 0; k < m_dimensions[1]; k++) {
+                    // fmt::println("m_dim[0]={} m_dim[1]={} rhs.m_dim[0]={} rhs.m_dim[1]={}  i={} j={} k={}", m_dimensions[0], m_dimensions[1], rhs.m_dimensions[0], rhs.m_dimensions[1], i, j, k);
+                    // fmt::println("a={} b={} result_index={}", a, b, i * result.m_dimensions[1] + j);
+                    result.m_data[i * result.m_dimensions[1] + j] += m_data[i * m_dimensions[1] + k] * rhs.m_data[j + k*rhs.m_dimensions[1]];
+                }
+            }
+        }
+        return result;
+    }
+
+
+    Tensor operator*(Tensor& rhs) {
+        auto biggest_dim = std::max(m_dimensions.size(), rhs.m_dimensions.size());
+        auto biggest_dim_or_2 = std::max(biggest_dim, static_cast<size_t>(2));
+
+        auto lhs_dim = left_pad_dimension(biggest_dim_or_2);
+        auto rhs_dim = rhs.left_pad_dimension(biggest_dim_or_2);
+        if (lhs_dim[lhs_dim.size() - 1] != rhs_dim[0]) {
+            fmt::println("Dimension mismatch between lhs: {} rhs: {}. no effect will be caused by this multiplication", dim_as_string(lhs_dim), dim_as_string(rhs_dim));
+            return *this;
+        }
+        if (biggest_dim_or_2 == 2) {
+            return __matrix_multiply__(rhs);
+        } else {
+            fmt::println("not implemented yet (more than 2 dimensions)");
+            return Tensor::zeros({m_dimensions[0], rhs.m_dimensions[1]});
+        }
+        for (size_t i = 0; i < lhs_dim.size(); i++) {
+            
+        }
+
+    }
 
     friend Tensor operator*(const Tensor& lhs, const Tensor& rhs) {
         return lhs * rhs;
@@ -130,6 +198,7 @@ public:
         new_tensor /= rhs;
         return new_tensor;
     };
+
     friend Tensor operator/(const Tensor& lhs, const Tensor& rhs) {
         return lhs / rhs;
     }
@@ -163,14 +232,16 @@ public:
         return *this;
     };
 
-    std::string as_string() const {
-
-        std::string output = fmt::format("Shape = ");
-        for (size_t j = 0; j < m_dimensions.size(); j++) {
-            output+= fmt::format("{}, ", m_dimensions[j]);
+    static std::string dim_as_string(const std::vector<int>& dim) {
+        std::string output = "Shape = ";
+        for (size_t j = 0; j < dim.size(); j++) {
+            output+= fmt::format("{}, ", dim[j]);
         }
-        output += "\n";
+        return output;
+    }
 
+    std::string as_string() const {
+        auto output = dim_as_string(m_dimensions) + "\n";
         std::vector<int> dims_extended = m_dimensions;
         for (int j = m_dimensions.size() - 2; j >= 0 ; j--) {
             dims_extended[j] *= dims_extended[j + 1];
@@ -215,7 +286,6 @@ public:
             new_size *= new_dimension[i];
         }
         std::vector<T> new_data(new_size);
-        std::cout << new_size << ">>>>>>>>>>\n";
         for (int i = 0; i < new_size; i++) {
             new_data[i] = m_data[i + index * new_size];
         }
